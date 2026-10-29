@@ -1,0 +1,28 @@
+# Publish the installable addon and its short documentation. Keep local plans,
+# screenshots, build tools, tests, caches, reports and backups in this workspace.
+/*
+!/.gitignore
+!/.gitattributes
+!/README.md
+!/LICENSE
+!/OctoBuildPlanner.toc
+!/Core/
+!/Data/
+!/Stats/
+!/UI/
+
+# Ignore temporary/editor files even inside the runtime directories.
+__pycache__/
+*.py[cod]
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej
+*~
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.env
+.env.*
