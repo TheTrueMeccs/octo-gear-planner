@@ -2,7 +2,7 @@
 ## Title: Octo Build Planner
 ## Notes: Character-local gear and talent planning, unbuffed statistics, and permanent enchantments.
 ## Author: TheTrueMeccs
-## Version: 0.2.29
+## Version: 0.2.31
 ## SavedVariablesPerCharacter: OBPDB
 
 Core\Bootstrap.lua

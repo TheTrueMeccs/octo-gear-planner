@@ -61,3 +61,30 @@ function L.Enchant(loadout, slot, key, profile)
     if not valid then return nil,reason end
     return out
 end
+function L.CopyCurrent(profile)
+    if type(GetInventoryItemLink)~="function" then return nil,"Current equipment cannot be read on this client." end
+    local out,report={}, {copied=0,skipped=0}
+    local enchantKeys=U.keys(OBP.Data.enchants)
+    for _,slot in ipairs(U.keys(OBP.Slots)) do
+        local link=GetInventoryItemLink("player",slot)
+        if link then
+            local id=tonumber(U.match(link,"item:(%d+)"))
+            local item=id and OBP.Data.items[id]
+            if item then
+                local entry={item=id}
+                local _,applied=U.match(link,"item:(%d+):(%d+)")
+                applied=tonumber(applied)
+                if applied and applied>0 then
+                    for _,key in ipairs(enchantKeys) do
+                        local enchant=OBP.Data.enchants[key]
+                        if enchant.enchantID==applied and C.EnchantFits(enchant,item,profile) then entry.enchant=key;break end
+                    end
+                end
+                out[slot]=entry;report.copied=report.copied+1
+            else report.skipped=report.skipped+1 end
+        end
+    end
+    local valid,reason=L.Validate(out,profile)
+    if not valid then return nil,reason end
+    return out,report
+end

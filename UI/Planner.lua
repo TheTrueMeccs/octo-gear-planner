@@ -140,6 +140,12 @@ function UI.Enchant(key)
     if not loadout then UI.Error(reason);return end
     P.Edit(loadout);UI.Refresh()
 end
+function UI.CopyGear()
+    local loadout,report=L.CopyCurrent(OBP.profile)
+    if not loadout then UI.Error(report);return end
+    P.Edit(loadout);UI.Refresh()
+    U.message("Copied "..report.copied.." equipped items."..(report.skipped>0 and " Skipped "..report.skipped.." items not in the database." or ""))
+end
 function UI.SourceLines(item,limit)
     local entries,groups,seenEntries={},{},{}
     for source,chance in C.Sources(item) do
@@ -306,9 +312,12 @@ function UI.BuildPaperDoll()
         end)
         K.Script(f,"OnLeave",UI.LeaveTooltip)
     end
-    for i,slot in ipairs(left) do slotButton(slot,8,-10-(i-1)*38) end
-    for i,slot in ipairs(right) do slotButton(slot,PAPER_WIDTH-44,-10-(i-1)*38) end
-    for i,slot in ipairs({16,17,18}) do slotButton(slot,(PAPER_WIDTH-120)/2+(i-1)*42,-314) end
+    for i,slot in ipairs(left) do slotButton(slot,8,-10-(i-1)*35) end
+    for i,slot in ipairs(right) do slotButton(slot,PAPER_WIDTH-44,-10-(i-1)*35) end
+    for i,slot in ipairs({16,17,18}) do slotButton(slot,(PAPER_WIDTH-120)/2+(i-1)*42,-300) end
+    UI.copyGear=UI.Button(pane,"Copy Current Gear",112,18,UI.CopyGear)
+    UI.copyGear:GetFontString():SetFont("Fonts\\FRIZQT__.TTF",10)
+    UI.copyGear:SetPoint("BOTTOMLEFT",pane,"BOTTOMLEFT",8,8)
     UI.modelView=CreateFrame("Frame",UI.Name("ModelView"),pane);UI.modelView:SetAllPoints(pane)
     UI.model=CreateFrame("DressUpModel","OBPCharacterModel",UI.modelView)
     UI.model:SetWidth(222*PAPER_COMPACT);UI.model:SetHeight(174*PAPER_TALL-24);UI.model:SetPoint("TOPLEFT",pane,"TOPLEFT",49*PAPER_COMPACT,-20*PAPER_TALL)
@@ -484,11 +493,12 @@ function UI.BuildSidePanels()
     UI.filterTitle=UI.Text(controls,"Filters",16,true);UI.filterTitle:SetPoint("TOP",controls,"TOP",0,-12);UI.filterTitle:SetJustifyH("CENTER")
     local filterHeight=height-216
     UI.instanceLabel=UI.Text(controls,"Instance",11,true)
-    local fieldLeft=math.max(68,math.ceil(UI.instanceLabel:GetStringWidth())+24)
+    local labelLeft=18
+    local fieldLeft=math.max(74,math.ceil(UI.instanceLabel:GetStringWidth())+30)
     -- Native InputBoxTemplate artwork extends five units left of its frame.
     local inputLeft=fieldLeft+5
     local function rowLabel(label,top)
-        label:SetPoint("TOPLEFT",controls,"TOPLEFT",12,-top);label:SetWidth(fieldLeft-24);label:SetHeight(24);label:SetJustifyV("MIDDLE")
+        label:SetPoint("TOPLEFT",controls,"TOPLEFT",labelLeft,-top);label:SetWidth(fieldLeft-labelLeft-12);label:SetHeight(24);label:SetJustifyV("MIDDLE")
     end
     UI.instance=UI.Dropdown(controls,width-fieldLeft-12,"All Instances",function() return UI.ItemOptions("instance") end,false,true);UI.instance:SetHeight(24*0.95);UI.instance:SetPoint("TOPLEFT",controls,"TOPLEFT",fieldLeft,-50-24*0.05/2)
     -- Native button textures contain two padded columns on either side of
@@ -802,7 +812,7 @@ function UI.Create()
     end
     local controlsWidth=UI.setDropdown:GetWidth()+save:GetWidth()+import:GetWidth()+export:GetWidth()+15
     UI.setDropdown:SetPoint("TOPLEFT",frame,"TOPLEFT",OUTER_MARGIN+(LEFT-controlsWidth)/2,-TOOLBAR_TOP)
-    UI.setLabel=UI.Text(frame,"Sets",10*0.85,true);UI.setLabel:SetPoint("BOTTOMLEFT",UI.setDropdown,"TOPLEFT",6,4)
+    UI.setLabel=UI.Text(frame,"Builds",10,true);UI.setLabel:SetPoint("BOTTOMLEFT",UI.setDropdown,"TOPLEFT",6,4)
     UI.BuildPaperDoll();UI.BuildTalentPanel();UI.BuildBrowser();UI.BuildSidePanels()
     if UISpecialFrames then table.insert(UISpecialFrames,frame:GetName()) end
     K.Script(frame,"OnHide",function()

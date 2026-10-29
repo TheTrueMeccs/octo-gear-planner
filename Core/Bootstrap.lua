@@ -1,5 +1,5 @@
 -- OctoBuildPlanner: no dependency on another addon or its globals.
-OBP = { version = "0.2.29", Data = { items = {}, enchants = {}, instances = {} } }
+OBP = { version = "0.2.31", Data = { items = {}, enchants = {}, instances = {} } }
 OBP.Util = {}
 local U = OBP.Util
 U.mod = math.mod or math.fmod
