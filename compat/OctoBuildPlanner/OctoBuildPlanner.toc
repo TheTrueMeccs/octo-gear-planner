@@ -1,0 +1,5 @@
+## Interface: 11200
+## Title: Octo Gear Planner (saved data from former name)
+## Notes: Data-only migration bridge for builds saved as Octo Build Planner. Contains no executable modules.
+## LoadOnDemand: 1
+## SavedVariablesPerCharacter: OBPDB

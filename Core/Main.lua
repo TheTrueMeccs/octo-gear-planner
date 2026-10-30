@@ -10,20 +10,21 @@ local function capture()
 end
 local function initialize()
     if initialized then return end
-    -- The data-only legacy addon loads the most recently saved database even
-    -- when this upgrade was installed while the previous version was running.
-    if OBPDB==nil and OGPDB==nil and LoadAddOn then
-        local okay,loaded,reason=pcall(LoadAddOn,"OctoGearPlanner")
+    -- The former name may hold newer builds than the original gear-planner
+    -- save. Import it once, then always prefer this addon's own saved data.
+    local migrated=type(OGPDB)=="table" and OGPDB.gearPlannerNameMigration==true
+    if not migrated and OBPDB==nil and LoadAddOn then
+        local okay,loaded,reason=pcall(LoadAddOn,"OctoBuildPlanner")
         if not okay or (not loaded and reason~="MISSING") then
-            U.message("Legacy saved data could not be loaded. Enable 'Octo Build Planner (legacy saved data)' in the addon list and reload before migrating.");return
+            U.message("Saved data could not be loaded. Enable 'Octo Gear Planner (saved data from former name)' in the addon list and reload before migrating.");return
         end
     end
-    local db,reason=OBP.Persistence.Load(OBPDB or OGPDB)
+    local db,reason=OBP.Persistence.Load(migrated and OGPDB or OBPDB or OGPDB)
     if not db then U.message(reason);return end
-    OBPDB=db
+    db.gearPlannerNameMigration=true;OGPDB=db
     if not capture() then return end
     OBP.Catalogue.BuildIndex();K.StartQueue();OBP.UI.Create();initialized=true
-    U.message("Loaded. Type /obp to plan gear and talents, or /obp diagnostics for compatibility details.")
+    U.message("Loaded. Type /ogp to plan gear and talents, or /ogp diagnostics for compatibility details.")
 end
 K.Script(driver,"OnEvent",function(_,eventName,a)
     if eventName=="PLAYER_LOGIN" then initialize()
@@ -43,13 +44,11 @@ K.Script(driver,"OnUpdate",function(_,elapsed)
     end
 end)
 for _,name in ipairs({"PLAYER_LOGIN","PLAYER_LOGOUT","PLAYER_ENTERING_WORLD","PLAYER_LEVEL_UP","UNIT_STATS","UNIT_AURA","PLAYER_AURAS_CHANGED","UNIT_INVENTORY_CHANGED","CHARACTER_POINTS_CHANGED","SKILL_LINES_CHANGED","SPELLS_CHANGED","UPDATE_SHAPESHIFT_FORM","GET_ITEM_INFO_RECEIVED","ITEM_DATA_LOAD_RESULT"}) do pcall(driver.RegisterEvent,driver,name) end
-SLASH_OCTOBUILDPLANNER1="/obp"
-SLASH_OCTOBUILDPLANNER2="/octobuildplanner"
-SLASH_OCTOBUILDPLANNER3="/ogp"
-SLASH_OCTOBUILDPLANNER4="/octogearplanner"
-SlashCmdList["OCTOBUILDPLANNER"]=function(text)
+SLASH_OCTOGEARPLANNER1="/ogp"
+SLASH_OCTOGEARPLANNER2="/octogearplanner"
+SlashCmdList["OCTOGEARPLANNER"]=function(text)
     if not initialized then initialize() end
     if not initialized then return end
-    if U.trim(text)=="diagnostics" then OBP.UI.TextDialog("Octo Build Planner Diagnostics",K.Diagnostic(),"Diagnostics")
+    if U.trim(text)=="diagnostics" then OBP.UI.TextDialog("Octo Gear Planner Diagnostics",K.Diagnostic(),"Diagnostics")
     else OBP.UI.Toggle() end
 end

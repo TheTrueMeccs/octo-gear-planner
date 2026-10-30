@@ -47,7 +47,7 @@ function C.StartQueue()
 end
 function C.Diagnostic()
     local c=C.Capabilities()
-    local lines={"Octo Build Planner "..OBP.version,"Client capabilities:"}
+    local lines={"Octo Gear Planner "..OBP.version,"Client capabilities:"}
     for _,key in ipairs(U.keys(c)) do table.insert(lines,"  "..key..": "..tostring(c[key])) end
     local m=OBP.Data.manifest or {}
     table.insert(lines,"Catalogue: "..tostring(m.version)..", "..tostring(m.itemCount).." items; complete="..tostring(m.complete))

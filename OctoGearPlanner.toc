@@ -1,9 +1,9 @@
 ## Interface: 11200
-## Title: Octo Build Planner
+## Title: Octo Gear Planner
 ## Notes: Character-local gear and talent planning, unbuffed statistics, and permanent enchantments.
 ## Author: TheTrueMeccs
-## Version: 0.2.31
-## SavedVariablesPerCharacter: OBPDB
+## Version: 0.2.32
+## SavedVariablesPerCharacter: OGPDB
 
 Core\Bootstrap.lua
 Data\Manifest.lua

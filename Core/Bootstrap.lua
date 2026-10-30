@@ -1,5 +1,5 @@
--- OctoBuildPlanner: no dependency on another addon or its globals.
-OBP = { version = "0.2.31", Data = { items = {}, enchants = {}, instances = {} } }
+-- OctoGearPlanner: no dependency on another addon or its globals.
+OBP = { version = "0.2.32", Data = { items = {}, enchants = {}, instances = {} } }
 OBP.Util = {}
 local U = OBP.Util
 U.mod = math.mod or math.fmod
@@ -101,7 +101,7 @@ function U.adler(text)
     return table.concat(parts)
 end
 function U.message(text)
-    if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Octo Build Planner:|r " .. tostring(text)) end
+    if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Octo Gear Planner:|r " .. tostring(text)) end
 end
 
 OBP.Slots = {

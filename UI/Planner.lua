@@ -750,7 +750,7 @@ end
 function UI.Settings()
     if not UI.settings then
         local frame=UI.Panel(UIParent,360,265);UI.settings=frame;frame:SetPoint("CENTER",UIParent,"CENTER",0,60);frame:SetFrameStrata("DIALOG");frame:EnableMouse(true)
-        local title=UI.Text(frame,"Octo Build Planner Settings",16,true);title:SetPoint("TOPLEFT",frame,"TOPLEFT",18,-18)
+        local title=UI.Text(frame,"Octo Gear Planner Settings",16,true);title:SetPoint("TOPLEFT",frame,"TOPLEFT",18,-18)
         frame.hide=UI.Check(frame,"Hide items my character can never use",function(f)
             P.db.prefs.hideUnusable=f:GetChecked() and true or false;UI.Requery()
         end);frame.hide:SetPoint("TOPLEFT",frame,"TOPLEFT",18,-56);frame.hide.label:SetWidth(290);frame.hide.label:SetHeight(30)
@@ -787,7 +787,7 @@ function UI.Create()
     UI.MeasurePanels()
     -- Keep panel geometry fixed and apply the saved scale to the whole window.
     local frame=UI.Panel(UIParent,FULL_WIDTH,HEIGHT,true);UI.main=frame
-    UI.title=UI.Text(frame,"Octo Build Planner",16,true);UI.title:SetPoint("TOP",frame,"TOP",0,2-OUTER_MARGIN);UI.title:SetJustifyH("CENTER")
+    UI.title=UI.Text(frame,"Octo Gear Planner",16,true);UI.title:SetPoint("TOP",frame,"TOP",0,2-OUTER_MARGIN);UI.title:SetJustifyH("CENTER")
     frame:SetFrameStrata("HIGH");frame:SetMovable(true);frame:EnableMouse(true);frame:RegisterForDrag("LeftButton");frame:SetClampedToScreen(true)
     UI.ApplyScale();frame:SetPoint("CENTER",UIParent,"CENTER",0,0)
     local pos=P.db.prefs.position

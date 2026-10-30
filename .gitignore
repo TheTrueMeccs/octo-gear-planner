@@ -5,11 +5,16 @@
 !/.gitattributes
 !/README.md
 !/LICENSE
-!/OctoBuildPlanner.toc
+!/OctoGearPlanner.toc
 !/Core/
 !/Data/
 !/Stats/
 !/UI/
+!/compat/
+/compat/*
+!/compat/OctoBuildPlanner/
+/compat/OctoBuildPlanner/*
+!/compat/OctoBuildPlanner/OctoBuildPlanner.toc
 
 # Ignore temporary/editor files even inside the runtime directories.
 __pycache__/

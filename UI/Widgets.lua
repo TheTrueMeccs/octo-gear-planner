@@ -319,7 +319,7 @@ function UI.Dialog(title,message,choices,input)
     return dialog
 end
 function UI.Error(message)
-    UI.Dialog("Octo Build Planner",message,{{text="OK"}})
+    UI.Dialog("Octo Gear Planner",message,{{text="OK"}})
 end
 function UI.TextDialog(title,text,mode,callback)
     UI.DismissDialog()
