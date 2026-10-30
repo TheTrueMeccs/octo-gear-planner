@@ -38,7 +38,7 @@ function S.Evaluate(profile,loadout)
     for key,n in pairs(profile.flat or {}) do totals[key]=n end
     for slot,entry in pairs(loadout) do
         if slot~=0 then
-        local item=OBP.Data.items[entry.item]
+        local item=OBP.Loadout.Item(entry)
         if not item then table.insert(missing,"Unavailable item "..tostring(entry.item))
         else
             local eligible,reason=OBP.Catalogue.Eligible(item,profile)
@@ -46,6 +46,7 @@ function S.Evaluate(profile,loadout)
             for key,n in pairs(item.stats or {}) do add(totals,key,n) end
             itemArmor=itemArmor+(item.baseArmor or item.stats.armor or 0)
             for _,text in ipairs(item.unsupported or {}) do table.insert(missing,item.name..": "..text) end
+            if entry.applied then table.insert(missing,item.name..": the copied enchantment is not supported in calculated totals.") end
             if entry.enchant then
                 local enchant=OBP.Data.enchants[entry.enchant]
                 if enchant then
@@ -61,7 +62,7 @@ function S.Evaluate(profile,loadout)
     end
     for _,effect in ipairs(profile.scoped or {}) do
         for _,slot in ipairs({16,17,18}) do
-            local item=loadout[slot] and OBP.Data.items[loadout[slot].item]
+            local item=OBP.Loadout.Item(loadout[slot])
             if item and item.classID==effect.itemClass and (not effect.subclassMask or effect.subclassMask==0 or U.maskAllows(effect.subclassMask,item.subclassID+1)) and (not effect.inventoryMask or effect.inventoryMask==0 or U.maskAllows(effect.inventoryMask,item.inventoryType+1)) then
                 if effect.aura==13 then weaponDamage[slot]=(weaponDamage[slot] or 0)+effect.amount
                 elseif effect.aura==79 then
@@ -118,9 +119,9 @@ function S.Evaluate(profile,loadout)
         put("regen",spiritPer5+(totals.mp5 or 0))
         put("regen_casting",spiritPer5*U.clamp(totals.casting_regen or 0,0,100)/100+(totals.mp5 or 0))
     else put("regen",nil);put("regen_casting",nil) end
-    local main=loadout[16] and OBP.Data.items[loadout[16].item]
-    local off=loadout[17] and OBP.Data.items[loadout[17].item]
-    local ranged=loadout[18] and OBP.Data.items[loadout[18].item]
+    local main=OBP.Loadout.Item(loadout[16])
+    local off=OBP.Loadout.Item(loadout[17])
+    local ranged=OBP.Loadout.Item(loadout[18])
     local skill=S.WeaponSkill(main,profile,totals)
     local rskill=S.WeaponSkill(ranged,profile,totals)
     put("weapon_skill",skill);put("ranged_skill",rskill)

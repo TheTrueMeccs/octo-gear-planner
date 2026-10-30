@@ -14,11 +14,16 @@ function C.Capabilities()
         effects=C_Spell and type(C_Spell.GetSpellEffectInfo)=="function",
         auras=C_UnitAuras and type(C_UnitAuras.GetAuraDataByIndex)=="function",
         itemData=C_Item and type(C_Item.GetItemDataByID)=="function",
+        itemStats=C_Item and type(C_Item.GetItemStats)=="function",
         itemRequests=C_Item and type(C_Item.RequestLoadItemDataByID)=="function"}
 end
 function C.Link(itemID,enchantKey)
+    local entry=type(itemID)=="table" and itemID
+    if entry then itemID=entry.item;enchantKey=entry.enchant end
     local enchant = enchantKey and OBP.Data.enchants[enchantKey]
-    return "item:"..itemID..":"..(enchant and enchant.enchantID or 0)..":0:0"
+    local applied=enchant and enchant.enchantID or entry and entry.applied or 0
+    if entry and entry.link then return (string.gsub(entry.link,"^(item:%d+:)%d+:","%1"..applied..":")) end
+    return "item:"..itemID..":"..applied..":0:0"
 end
 function C.Cached(id) return GetItemInfo and GetItemInfo(C.Link(id))~=nil end
 function C.Request(id)

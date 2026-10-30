@@ -17,7 +17,7 @@ Made for the OctoWoW 1.18.1 client. **ClassicAPI.dll is required for complete st
 
 Type `/ogp` to open the planner.
 
-- **Gear:** Click a gear slot, then choose an item from the list. Right-click a slot to clear it. **Copy Current Gear** replaces the planned gear with your equipped items, skipping items outside the database. Hover over an item to see its stats and sources. Right-click a browser item for the full source list.
+- **Gear:** Click a gear slot, then choose an item from the list. Right-click a slot to clear it. **Copy Current Gear** replaces the planned gear with all your equipped items, including items outside the catalogue and their random suffixes. Copies retain their exact item links and supported stats when saved. Hover over an item to see its stats and sources. Right-click a browser item for the full source list.
 - **Search and filters:** Search or sort the item list. Narrow it by instance, level, rarity, stats, or how items are obtained.
 - **Enchants:** Click **Enchants** below the model to choose an enchantment for the selected item.
 - **Talents:** Switch to **Talents**, choose a level from 10–60, and spend the available points. **Copy Current Talents** copies your character's current build into the plan.

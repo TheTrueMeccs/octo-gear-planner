@@ -144,7 +144,7 @@ function UI.CopyGear()
     local loadout,report=L.CopyCurrent(OBP.profile)
     if not loadout then UI.Error(report);return end
     P.Edit(loadout);UI.Refresh()
-    U.message("Copied "..report.copied.." equipped items."..(report.skipped>0 and " Skipped "..report.skipped.." items not in the database." or ""))
+    U.message("Copied "..report.copied.." equipped items."..(report.skipped>0 and " Could not read "..report.skipped.." item links." or ""))
 end
 function UI.SourceLines(item,limit)
     local entries,groups,seenEntries={},{},{}
@@ -204,15 +204,15 @@ function UI.SourceLines(item,limit)
     if table.getn(lines)==0 then return {"Source: Unknown","Drop Chance: ?"} end
     return lines,detail
 end
-function UI.ItemTooltip(button,id,enchantKey)
-    local item=OBP.Data.items[id]
+function UI.ItemTooltip(button,id,enchantKey,entry)
+    local item=entry and L.Item(entry) or OBP.Data.items[id]
     if not item then
         GameTooltip:SetOwner(button,"ANCHOR_RIGHT");GameTooltip:SetText("Unavailable item #"..tostring(id),1,0.35,0.2)
         GameTooltip:AddLine("This selection is preserved. Right-click its slot to clear it.",1,1,1,true);GameTooltip:Show();return
     end
-    UI.hover={button=button,id=id,enchant=enchantKey}
+    UI.hover={button=button,id=id,enchant=enchantKey,entry=entry}
     GameTooltip:SetOwner(button,"ANCHOR_RIGHT")
-    if K.Cached(id) then GameTooltip:SetHyperlink(K.Link(id,enchantKey))
+    if K.Cached(entry or id) then GameTooltip:SetHyperlink(K.Link(entry or id,enchantKey))
     else
         GameTooltip:ClearLines();GameTooltip:AddLine(item.name,UI.Color(item))
         for index,line in ipairs(item.tooltip or {}) do
@@ -222,7 +222,7 @@ function UI.ItemTooltip(button,id,enchantKey)
         K.Request(id)
     end
     GameTooltip:AddLine(" ")
-    local sources,moreSources=UI.SourceLines(item,6)
+    local sources,moreSources=UI.SourceLines(OBP.Data.items[id] or item,6)
     for _,line in ipairs(sources) do GameTooltip:AddLine(line,1,0.82,0,true) end
     if moreSources then GameTooltip:AddLine("Right-click a browser item for individual sources.",0.7,0.7,0.7,true) end
     if table.getn(item.excluded or {})>0 or item.itemSet then GameTooltip:AddLine("Planned totals exclude set bonuses, procs and on-use effects.",0.65,0.65,0.65,true) end
@@ -233,8 +233,10 @@ function UI.ItemTooltip(button,id,enchantKey)
 end
 function UI.LeaveTooltip() UI.hover=nil;GameTooltip:Hide() end
 function UI.RefreshCache(id)
+    OBP.EquippedItems.Invalidate(id)
+    if UI.main and UI.main:IsShown() then UI.UpdateStats() end
     if UI.hover and (not id or UI.hover.id==id) then
-        local hover=UI.hover;UI.ItemTooltip(hover.button,hover.id,hover.enchant)
+        local hover=UI.hover;UI.ItemTooltip(hover.button,hover.id,hover.enchant,hover.entry)
     end
     if UI.main and UI.main:IsShown() and UI.modelMissing and ((id and UI.modelMissing[id]) or (not id and next(UI.modelMissing))) then UI.modelDelay=0.1 end
 end
@@ -244,7 +246,7 @@ function UI.UpdateModel()
     for _,slot in ipairs({4,19,5,7,8,9,10,6,3,15,1,16,17,18}) do
         local entry=P.working.loadout[slot]
         if entry then
-            local cached=K.Cached(entry.item);local link=K.Link(entry.item,entry.enchant)
+            local cached=K.Cached(entry);local link=K.Link(entry)
             table.insert(plan,slot..":"..link)
             table.insert(signature,slot..":"..link..":"..tostring(cached))
             if cached then table.insert(links,{slot=slot,link=link}) else missing[entry.item]=true;K.Request(entry.item) end
@@ -307,7 +309,7 @@ function UI.BuildPaperDoll()
         end)
         K.Script(f,"OnEnter",function(button)
             local entry=P.working.loadout[button.slot]
-            if entry then UI.ItemTooltip(button,entry.item,entry.enchant)
+            if entry then UI.ItemTooltip(button,entry.item,entry.enchant,entry)
             else GameTooltip:SetOwner(button,"ANCHOR_RIGHT");GameTooltip:SetText(OBP.Slots[button.slot].name.."\nLeft-click to browse; right-click to clear.",1,0.82,0,true) end
         end)
         K.Script(f,"OnLeave",UI.LeaveTooltip)
@@ -670,7 +672,7 @@ function UI.EnchantmentBonus(enchant)
     return (string.gsub(bonus,",%s*%+","\n+"))
 end
 function UI.RenderEnchantments()
-    local entry=P.working.loadout[P.db.prefs.slot];local item=entry and OBP.Data.items[entry.item]
+    local entry=P.working.loadout[P.db.prefs.slot];local item=L.Item(entry)
     local keys=C.Enchantments(item,OBP.profile)
     local query=string.lower(U.trim(UI.enchantSearch:GetText()))
     UI.enchantKeys={}
@@ -776,7 +778,7 @@ function UI.Refresh()
     if not UI.main then return end
     UI.setDropdown:SetText((P.working.name~="" and P.working.name or "Unsaved Set")..(P.Dirty() and " *" or ""))
     for slot,button in pairs(UI.slotButtons) do
-        local entry=P.working.loadout[slot];local item=entry and OBP.Data.items[entry.item]
+        local entry=P.working.loadout[slot];local item=L.Item(entry)
         UI.PaintItem(button,item,slot==P.db.prefs.slot,entry and "Interface\\Icons\\INV_Misc_QuestionMark" or "Interface\\PaperDoll\\UI-PaperDoll-Slot-"..OBP.Slots[slot].texture)
     end
     UI.UpdateStats();UI.UpdateModel();UI.RenderGrid();UI.RefreshFilterChecks()

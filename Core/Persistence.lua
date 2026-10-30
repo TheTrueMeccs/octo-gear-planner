@@ -8,6 +8,7 @@ local function equipmentShape(loadout)
     for slot,entry in pairs(loadout) do
         count=count+1
         if count>20 or (not OBP.Slots[slot] and slot~=0) or type(entry)~="table" or type(entry.item)~="number" or entry.item<1 or entry.item~=math.floor(entry.item) or (entry.enchant~=nil and type(entry.enchant)~="string") then return false end
+        if not OBP.EquippedItems.Shape(entry) then return false end
     end
     return true
 end
