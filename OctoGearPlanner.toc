@@ -2,7 +2,7 @@
 ## Title: Octo Gear Planner
 ## Notes: Character-local gear and talent planning, unbuffed statistics, and permanent enchantments.
 ## Author: TheTrueMeccs
-## Version: 0.2.33
+## Version: 0.2.51
 ## SavedVariablesPerCharacter: OGPDB
 
 Core\Bootstrap.lua
@@ -104,5 +104,6 @@ Stats\TooltipText.lua
 Stats\Tooltips.lua
 UI\Widgets.lua
 UI\Planner.lua
+UI\Appearances.lua
 UI\Talents.lua
 Core\Main.lua

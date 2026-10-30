@@ -11,7 +11,7 @@ local weapons = {
     WARLOCK={7,10,15,19,20}, DRUID={4,5,6,10,13,15,20}
 }
 local relic = { [7]="PALADIN",[8]="DRUID",[9]="SHAMAN" }
-local weaponNames={[0]="One-Handed Axes",[1]="Two-Handed Axes",[2]="Bows",[3]="Guns",[4]="One-Handed Maces",[5]="Two-Handed Maces",[6]="Polearms",[7]="One-Handed Swords",[8]="Two-Handed Swords",[10]="Staves",[13]="Fist Weapons",[14]="Miscellaneous",[15]="Daggers",[16]="Thrown",[18]="Crossbows",[19]="Wands",[20]="Fishing Poles"}
+local weaponNames={[0]="One-Handed Axes",[1]="Two-Handed Axes",[2]="Bows",[3]="Guns",[4]="One-Handed Maces",[5]="Two-Handed Maces",[6]="Polearms",[7]="One-Handed Swords",[8]="Two-Handed Swords",[10]="Staves",[13]="Fist Weapons",[14]="Miscellaneous",[15]="Daggers",[16]="Thrown",[17]="Spears",[18]="Crossbows",[19]="Wands",[20]="Fishing Poles"}
 local armorNames={[1]="Cloth",[2]="Leather",[3]="Mail",[4]="Plate"}
 function C.Sources(item)
     local index=0
@@ -58,6 +58,7 @@ function C.Eligible(item, profile)
         if item.subclassID == 6 and profile.class ~= "WARRIOR" and profile.class ~= "PALADIN" and profile.class ~= "SHAMAN" then return false, "Your class cannot use shields." end
         if relic[item.subclassID] and relic[item.subclassID] ~= profile.class then return false, "This relic is for another class." end
     elseif item.classID == 2 then
+        if item.subclassID == 14 then return true end -- Tools need no weapon proficiency.
         for _, sub in ipairs(weapons[profile.class] or {}) do if sub == item.subclassID then return true end end
         return false, "Your class cannot learn this weapon type."
     elseif item.classID == 6 and profile.class ~= "HUNTER" and profile.class ~= "WARRIOR" and profile.class ~= "ROGUE" then

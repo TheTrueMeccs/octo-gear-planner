@@ -146,22 +146,46 @@ function UI.SetActive(button,active)
     button.active=active
     if active then button:LockHighlight() else button:UnlockHighlight() end
 end
+function UI.ZoomModel(model,zoom)
+    if not model.SetCamDistanceScale then return false end
+    UI.modelCameras=UI.modelCameras or {}
+    local camera=UI.modelCameras[model] or {}
+    UI.modelCameras[model]=camera
+    local scale,width,height=model:GetEffectiveScale(),model:GetWidth(),model:GetHeight()
+    local resized=camera.scale~=scale or camera.width~=width or camera.height~=height
+    camera.zoom=zoom
+    -- PlayerModel configures its camera when the mesh finishes loading.
+    -- ClassicAPI retains this distance setting through that configuration.
+    if model.SetPortraitZoom then model:SetPortraitZoom(0) end
+    model:SetCamDistanceScale(1/zoom)
+    -- The native camera is a frozen copy of the scaled model's camera.
+    -- Resizing changes the model transform but leaves that copy stale.
+    -- Rebuild it at the new scale; changing the zoom as well scales twice.
+    if resized and model.RefreshCamera then model:RefreshCamera() end
+    camera.scale,camera.width,camera.height=scale,width,height
+    return true
+end
+function UI.RefreshModelCameras()
+    for model,camera in pairs(UI.modelCameras or {}) do UI.ZoomModel(model,camera.zoom) end
+end
 function UI.CharacterBackdrop(frame,owner,x,y)
     -- One opaque interior sample avoids the transparent/baked edges in the
     -- other character-frame quadrants. BORDER keeps it above the dark backdrop.
     local inset=8
     local width,height=frame:GetWidth()-2*inset,frame:GetHeight()-2*inset
     owner=owner or frame;x=x or 0;y=y or 0
+    local existing=owner.characterArt and owner.characterArt[1]
     owner.characterArt={}
     local l,t=math.max(inset,x),math.max(inset,y)
     local r,b=math.min(inset+width,x+owner:GetWidth()),math.min(inset+height,y+owner:GetHeight())
     if r>l and b>t then
-        local texture=owner:CreateTexture(nil,owner==UI.model and "BACKGROUND" or "BORDER")
+        local texture=existing or owner:CreateTexture(nil,(owner==UI.model or owner.appearancePreview) and "BACKGROUND" or "BORDER")
+        texture:ClearAllPoints();texture:Show()
         texture:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-General-TopLeft")
         texture:SetWidth(r-l);texture:SetHeight(b-t);texture:SetPoint("TOPLEFT",owner,"TOPLEFT",l-x,y-t)
         texture:SetTexCoord(22/256+(234/256)*(l-inset)/width,22/256+(234/256)*(r-inset)/width,80/256+(176/256)*(t-inset)/height,80/256+(176/256)*(b-inset)/height)
         table.insert(owner.characterArt,texture)
-    end
+    elseif existing then existing:Hide() end
 end
 function UI.StatPanel(parent,width,height)
     local frame=CreateFrame("Frame",UI.Name("StatPanel"),parent);frame:SetWidth(width);frame:SetHeight(height)

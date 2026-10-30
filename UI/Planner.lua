@@ -3,6 +3,7 @@ local UI=OBP.UI
 local PAPER_WIDTH,PAPER_HEIGHT,PAPER_SCALE=320,360,1.2*0.9
 local PAPER_COMPACT=0.95
 local CHARACTER_SCALE=0.95
+local CHARACTER_MODEL_SIZE=0.95*0.95
 local ENCHANT_SCALE,ENCHANT_GAP,ENCHANT_FONT=0.7,6,12
 local FILTER_SCALE=0.9
 local ADDON_BASE_SCALE=1.1
@@ -17,9 +18,12 @@ local CONTENT_HEIGHT,CONTENT_TOP=CHARACTER_HEIGHT*CHARACTER_SCALE,OUTER_MARGIN+T
 local PAPER_TALL=(CHARACTER_HEIGHT-32)/(PAPER_HEIGHT*PAPER_SCALE)
 local HEIGHT=CONTENT_TOP+CONTENT_HEIGHT+OUTER_MARGIN
 local GRID_WIDTH=38+GRID_ICON+(GRID_COLUMNS-1)*GRID_STEP
+local APPEARANCE_WIDTH=math.max(570,GRID_WIDTH*1.65)
+-- Keep scrollbar space and column gaps while narrowing each card by 5%.
+APPEARANCE_WIDTH=67+(APPEARANCE_WIDTH-67)*0.95
 local FILTER,GRID_X,FILTER_X,FULL_WIDTH
 local filterGroups={
-    {"Rarity",{{"Uncommon",2},{"Rare",3},{"Epic",4},{"Legendary",5}},"qualities"},
+    {"Rarity",{{"Poor",0},{"Common",1},{"Uncommon",2},{"Rare",3},{"Epic",4},{"Legendary",5},{"Artifact",6}},"qualities"},
     {"Primary Stats",{{"Strength","str"},{"Agility","agi"},{"Stamina","sta"},{"Intellect","int"},{"Spirit","spi"}},"stats"},
     {"Spell",{{"Spell Damage","spell_power"},{"Arcane Spell Damage","power_arcane"},{"Fire Spell Damage","power_fire"},{"Frost Spell Damage","power_frost"},{"Holy Spell Damage","power_holy"},{"Nature Spell Damage","power_nature"},{"Shadow Spell Damage","power_shadow"},{"Spell Hit","spell_hit"},{"Spell Crit","spell_crit"},{"Healing Power","healing"},{"Mana per 5 sec","mp5"},{"Spell Haste","spell_haste"}},"stats"},
     {"Attack",{{"Attack Power","ap"},{"Ranged Attack Power","rap"},{"Melee Hit","hit"},{"Melee Crit","crit"},{"Attack Haste","haste"}},"stats"},
@@ -42,7 +46,7 @@ function UI.MeasurePanels()
     FILTER=math.max(180,math.ceil(widest(filterLabels,11)+80))
     UI.filterWidth=FILTER
     GRID_X=OUTER_MARGIN+LEFT+11
-    FILTER_X=GRID_X+GRID_WIDTH+11
+    FILTER_X=GRID_X+(P.db.prefs.browserView=="Appearance" and APPEARANCE_WIDTH or GRID_WIDTH)+11
     FULL_WIDTH=FILTER_X+FILTER+OUTER_MARGIN
 end
 
@@ -160,11 +164,12 @@ function UI.SourceLines(item,limit)
         local locations=table.concat(names,", ")
         -- Identical faction variants share one hover line, but distinct IDs
         -- remain available in the expanded source list.
-        local identity=(source.kind or "")..":"..tostring(limit and source.kind=="reward-from" and source.name or source.id or source.name)..":"..locations..":"..tostring(chance)
+        local profession=source.kind=="created-by" and source.professionNames and table.concat(source.professionNames,", ")
+        local identity=(source.kind or "")..":"..tostring(limit and profession or limit and source.kind=="reward-from" and source.name or source.id or source.name)..":"..locations..":"..tostring(chance)
         if not seenEntries[identity] then
             seenEntries[identity]=true
             local drop=source.kind=="dropped-by" or source.kind=="contained-in" or source.kind=="fished-in"
-            local entry={source=source,chance=chance,locations=locations,drop=drop}
+            local entry={source=source,chance=chance,locations=locations,drop=drop,profession=profession}
             table.insert(entries,entry)
             -- Hover summaries group repeated instance drops; the source dialog
             -- retains every individual relationship and its own probability.
@@ -182,7 +187,9 @@ function UI.SourceLines(item,limit)
     for _,entry in ipairs(entries) do
         local group=entry.group
         if not (group and group.count>=3 and group.shown) then
-            local label="Source: "..entry.source.name
+            local sourceName=entry.source.kind=="created-by" and string.gsub(entry.source.name,"^@","") or entry.source.name
+            local label="Source: "..(entry.profession or sourceName)
+            if not limit and entry.profession then label=label.." — "..string.gsub(entry.source.name,"^@","") end
             if not limit and entry.source.side then label=label..(entry.source.side==1 and " (Alliance)" or " (Horde)") end
             local probability=entry.chance~=nil and string.format("%.4g%%",entry.chance) or "?"
             if group and group.count>=3 then
@@ -222,6 +229,7 @@ function UI.ItemTooltip(button,id,enchantKey,entry)
         K.Request(id)
     end
     GameTooltip:AddLine(" ")
+    if item.randomSuffix then GameTooltip:AddLine("Base item without random suffix bonuses.",0.7,0.7,0.7,true) end
     local sources,moreSources=UI.SourceLines(OBP.Data.items[id] or item,6)
     for _,line in ipairs(sources) do GameTooltip:AddLine(line,1,0.82,0,true) end
     if moreSources then GameTooltip:AddLine("Right-click a browser item for individual sources.",0.7,0.7,0.7,true) end
@@ -239,6 +247,7 @@ function UI.RefreshCache(id)
         local hover=UI.hover;UI.ItemTooltip(hover.button,hover.id,hover.enchant,hover.entry)
     end
     if UI.main and UI.main:IsShown() and UI.modelMissing and ((id and UI.modelMissing[id]) or (not id and next(UI.modelMissing))) then UI.modelDelay=0.1 end
+    if UI.main and UI.main:IsShown() and P.db.prefs.browserView=="Appearance" then UI.AppearanceCache(id) end
 end
 function UI.UpdateModel()
     if not UI.model then return end
@@ -259,12 +268,16 @@ function UI.UpdateModel()
     local changed=UI.modelPlan~=planKey
     local rendered=changed and {} or U.copy(UI.modelRendered or {})
     local okay=pcall(function()
-        if not UI.modelInitialized then UI.model:SetUnit("player");UI.modelInitialized=true end
+        if not UI.modelInitialized then
+            UI.model:SetUnit("player")
+            UI.modelInitialized=true
+        end
         if changed and UI.model.Undress then UI.model:Undress() end
         for _,entry in ipairs(links) do
             if rendered[entry.slot]~=entry.link then UI.model:TryOn(entry.link);rendered[entry.slot]=entry.link end
         end
         UI.model:SetFacing(UI.facing or 0)
+        UI.ZoomModel(UI.model,1.1*CHARACTER_MODEL_SIZE)
     end)
     if not okay then UI.modelNote:SetText("Preview unavailable")
     else UI.modelSignature=key;UI.modelPlan=planKey;UI.modelRendered=rendered;UI.modelNote:SetText("") end
@@ -322,8 +335,11 @@ function UI.BuildPaperDoll()
     UI.copyGear:SetPoint("BOTTOMLEFT",pane,"BOTTOMLEFT",8,8)
     UI.modelView=CreateFrame("Frame",UI.Name("ModelView"),pane);UI.modelView:SetAllPoints(pane)
     UI.model=CreateFrame("DressUpModel","OBPCharacterModel",UI.modelView)
-    UI.model:SetWidth(222*PAPER_COMPACT);UI.model:SetHeight(174*PAPER_TALL-24);UI.model:SetPoint("TOPLEFT",pane,"TOPLEFT",49*PAPER_COMPACT,-20*PAPER_TALL)
-    UI.CharacterBackdrop(pane,UI.model,49*PAPER_COMPACT,20*PAPER_TALL)
+    local modelHeight=174*PAPER_TALL-24
+    -- Lower the smaller model to retain its previous feet baseline.
+    UI.characterModelDown=modelHeight*(1-CHARACTER_MODEL_SIZE)/2
+    UI.model:SetWidth(222*PAPER_COMPACT);UI.model:SetHeight(modelHeight);UI.model:SetPoint("TOPLEFT",pane,"TOPLEFT",49*PAPER_COMPACT,-20*PAPER_TALL-UI.characterModelDown)
+    UI.CharacterBackdrop(pane,UI.model,49*PAPER_COMPACT,20*PAPER_TALL+UI.characterModelDown)
     UI.modelNote=UI.Text(UI.modelView,"",10,false);UI.modelNote:SetPoint("CENTER",UI.model,"CENTER",0,0)
     UI.rotationButtons={}
     for i,direction in ipairs({-1,1}) do
@@ -339,7 +355,7 @@ function UI.BuildPaperDoll()
     end
     UI.enchantButton=UI.Button(UI.modelView,"Enchants",62,20,function() UI.SetModelView(true) end)
     UI.enchantButton:GetFontString():SetFont("Fonts\\FRIZQT__.TTF",10)
-    UI.enchantButton:SetPoint("TOPLEFT",UI.model,"BOTTOMLEFT",0,-4)
+    UI.enchantButton:SetPoint("TOPLEFT",UI.model,"BOTTOMLEFT",0,-4+UI.characterModelDown)
     UI.resistances={};UI.resistanceIcons={}
     local slices={arcane=2,fire=0,frost=1,nature=3,shadow=4}
     for i,school in ipairs({"arcane","fire","frost","nature","shadow"}) do
@@ -466,6 +482,34 @@ function UI.BuildBrowser()
     UI.gridClear=UI.Button(UI.grid,"Clear Filters",120,24,UI.ClearFilters);UI.gridClear:SetPoint("TOP",UI.gridEmpty,"BOTTOM",0,-14)
     UI.gridBar=UI.Scrollbar(UI.grid,CONTENT_HEIGHT-55,function(row) UI.scrollRow=row;UI.RenderGrid() end);UI.gridBar:SetPoint("TOPRIGHT",UI.grid,"TOPRIGHT",-13.5,-29)
     UI.grid:EnableMouseWheel(true);K.Script(UI.grid,"OnMouseWheel",function(_,delta) UI.gridBar:SetValue(U.clamp(UI.scrollRow-(delta or 0)*2,0,UI.maxScroll or 0)) end)
+    UI.BuildAppearances()
+end
+function UI.LayoutBrowser()
+    local appearance=P.db.prefs.browserView=="Appearance"
+    local width=appearance and APPEARANCE_WIDTH or GRID_WIDTH
+    UI.browserWidth=width;UI.grid:SetWidth(width);UI.CharacterBackdrop(UI.grid)
+    UI.columns=appearance and 3 or GRID_COLUMNS
+    UI.visibleRows=appearance and 2 or math.floor((CONTENT_HEIGHT-16+4)/(GRID_ICON+4))
+    FILTER_X=GRID_X+width+11;FULL_WIDTH=FILTER_X+FILTER+OUTER_MARGIN
+    UI.filterFrame:ClearAllPoints();UI.filterFrame:SetPoint("TOPLEFT",UI.main,"TOPLEFT",FILTER_X,-CONTENT_TOP)
+    UI.main:SetWidth(FULL_WIDTH)
+    -- Center the fixed-size toolbar as one group above the current item panel.
+    local toolbarLeft=GRID_X+6+(width-GRID_WIDTH)/2
+    UI.search:ClearAllPoints();UI.search:SetPoint("TOPLEFT",UI.main,"TOPLEFT",toolbarLeft,-TOOLBAR_TOP)
+    UI.sortDropdown:ClearAllPoints();UI.sortDropdown:SetPoint("TOPLEFT",UI.main,"TOPLEFT",toolbarLeft+UI.search:GetWidth()+10,-TOOLBAR_TOP)
+    UI.viewButton:SetText(appearance and "Compact" or "Appearance")
+    UI.LayoutAppearances(width,CONTENT_HEIGHT)
+end
+function UI.SetBrowserView(view)
+    if view~="Appearance" then view="Compact" end
+    if P.db.prefs.browserView==view then return end
+    local first=UI.scrollRow*UI.columns
+    local center={x=(UI.main:GetLeft()+UI.main:GetWidth()/2)*UI.main:GetScale(),y=(UI.main:GetBottom()+UI.main:GetHeight()/2)*UI.main:GetScale()}
+    UI.LeaveTooltip();P.db.prefs.browserView=view;UI.LayoutBrowser()
+    UI.maxScroll=math.max(0,math.ceil(table.getn(UI.results or {})/UI.columns)-UI.visibleRows)
+    UI.scrollRow=math.min(math.floor(first/UI.columns),UI.maxScroll)
+    UI.gridBar:SetMinMaxValues(0,UI.maxScroll);UI.gridBar:SetValue(UI.scrollRow);UI.RenderGrid()
+    UI.ApplyScale(true,center)
 end
 function UI.Requery()
     UI.results=C.Sort(C.Query(P.db.prefs.slot,P.db.prefs.filters,OBP.profile,P.db.prefs.hideUnusable),P.db.prefs.sort)
@@ -476,10 +520,11 @@ end
 function UI.RenderGrid()
     local selected=P.working.loadout[P.db.prefs.slot]
     for index,button in ipairs(UI.gridButtons) do
-        local id=UI.results and UI.results[index+UI.scrollRow*UI.columns]
+        local id=P.db.prefs.browserView=="Compact" and UI.results and UI.results[index+UI.scrollRow*UI.columns]
         button.itemID=id
         if id then UI.PaintItem(button,OBP.Data.items[id],selected and selected.item==id);button:Show() else button:Hide() end
     end
+    UI.RenderAppearances()
     if not UI.results or table.getn(UI.results)==0 then UI.gridEmpty:Show();UI.gridClear:Show() else UI.gridEmpty:Hide();UI.gridClear:Hide() end
 end
 function UI.ClearFilters()
@@ -557,7 +602,7 @@ function UI.BuildSidePanels()
     UI.enchantFrame=CreateFrame("Frame",UI.Name("ModelEnchantments"),pane)
     UI.enchantFrame:SetWidth(width);UI.enchantFrame:SetHeight(height);UI.enchantFrame:SetPoint("TOPLEFT",pane,"TOPLEFT",49*PAPER_COMPACT,-10*PAPER_TALL)
     UI.CharacterBackdrop(pane,UI.enchantFrame,49*PAPER_COMPACT,10*PAPER_TALL)
-    UI.enchantBack=UI.Button(UI.enchantFrame,"Back",48,20,function() UI.SetModelView(false) end);UI.enchantBack:GetFontString():SetFont("Fonts\\FRIZQT__.TTF",10);UI.enchantBack:SetPoint("TOPLEFT",UI.model,"BOTTOMLEFT",0,-4)
+    UI.enchantBack=UI.Button(UI.enchantFrame,"Back",48,20,function() UI.SetModelView(false) end);UI.enchantBack:GetFontString():SetFont("Fonts\\FRIZQT__.TTF",10);UI.enchantBack:SetPoint("TOPLEFT",UI.model,"BOTTOMLEFT",0,-4+UI.characterModelDown)
     -- Fill the viewport with editing controls, reserving a bottom strip for
     -- Back at the same lower-left position as the model-view Enchants button.
     local content=CreateFrame("Frame",UI.Name("EnchantmentControls"),UI.enchantFrame);UI.enchantContent=content
@@ -719,16 +764,17 @@ function UI.UpdateScaleSettings()
     settings.scaleLabel:SetText("Addon scale: "..requested.."%"..(actual<requested and " (screen fit: "..actual.."%)" or ""))
     UI.scaleSync=true;settings.scaleSlider:SetValue(requested);UI.scaleSync=nil
 end
-function UI.ApplyScale(keepPosition)
+function UI.ApplyScale(keepPosition,center)
     local frame=UI.main
     if not frame then return end
     local x,y
     if keepPosition and frame:GetLeft() and frame:GetBottom() then
-        x=(frame:GetLeft()+frame:GetWidth()/2)*frame:GetScale()
-        y=(frame:GetBottom()+frame:GetHeight()/2)*frame:GetScale()
+        x=center and center.x or (frame:GetLeft()+frame:GetWidth()/2)*frame:GetScale()
+        y=center and center.y or (frame:GetBottom()+frame:GetHeight()/2)*frame:GetScale()
     end
     local scale=math.min(ADDON_BASE_SCALE*P.db.prefs.uiScale,(UIParent:GetWidth()-24)/frame:GetWidth(),(UIParent:GetHeight()-24)/frame:GetHeight())
     frame:SetScale(scale)
+    UI.RefreshModelCameras()
     if x and y then
         local halfWidth,halfHeight=frame:GetWidth()*scale/2,frame:GetHeight()*scale/2
         x=U.clamp(x,12+halfWidth,UIParent:GetWidth()-12-halfWidth)
@@ -816,6 +862,9 @@ function UI.Create()
     UI.setDropdown:SetPoint("TOPLEFT",frame,"TOPLEFT",OUTER_MARGIN+(LEFT-controlsWidth)/2,-TOOLBAR_TOP)
     UI.setLabel=UI.Text(frame,"Builds",10,true);UI.setLabel:SetPoint("BOTTOMLEFT",UI.setDropdown,"TOPLEFT",6,4)
     UI.BuildPaperDoll();UI.BuildTalentPanel();UI.BuildBrowser();UI.BuildSidePanels()
+    UI.viewButton=UI.Button(frame,"Appearance",90,24,function() UI.SetBrowserView(P.db.prefs.browserView=="Appearance" and "Compact" or "Appearance") end)
+    UI.viewButton:SetPoint("BOTTOMRIGHT",UI.filterFrame,"TOPRIGHT",0,12)
+    UI.LayoutBrowser();UI.ApplyScale()
     if UISpecialFrames then table.insert(UISpecialFrames,frame:GetName()) end
     K.Script(frame,"OnHide",function()
         UI.rotation=nil
@@ -825,6 +874,7 @@ function UI.Create()
     end)
     K.Script(frame,"OnUpdate",function(_,elapsed)
         UI.UpdateRotation(elapsed)
+        UI.UpdateAppearancePreviews(elapsed)
         if UI.modelDelay then
             UI.modelDelay=UI.modelDelay-(elapsed or 0)
             if UI.modelDelay<=0 then UI.modelDelay=nil;UI.UpdateModel() end

@@ -1,5 +1,5 @@
 -- OctoGearPlanner: no dependency on another addon or its globals.
-OBP = { version = "0.2.33", Data = { items = {}, enchants = {}, instances = {} } }
+OBP = { version = "0.2.51", Data = { items = {}, enchants = {}, instances = {} } }
 OBP.Util = {}
 local U = OBP.Util
 U.mod = math.mod or math.fmod

@@ -1,7 +1,9 @@
 local U = OBP.Util
 OBP.Persistence = {}
 local P = OBP.Persistence
-function P.DefaultFilters() return {name="",minLevel=1,maxLevel=60,armor={},weapon={},stats={},qualities={},acquisition={}} end
+function P.DefaultRarities() return {[0]=-1,[1]=-1} end
+function P.DefaultAcquisition() return {unknown=-1} end
+function P.DefaultFilters() return {name="",minLevel=1,maxLevel=60,armor={},weapon={},stats={},qualities=P.DefaultRarities(),acquisition=P.DefaultAcquisition()} end
 local function equipmentShape(loadout)
     if type(loadout)~="table" then return false end
     local count=0
@@ -49,6 +51,8 @@ function P.Load(db)
     if not categories[prefs.right] then prefs.right="Spell" end
     prefs.drawer=nil -- Filters and Enchantments are now independent, always-visible panels.
     if prefs.characterPage~="Character" and prefs.characterPage~="Talents" then prefs.characterPage="Character" end
+    if prefs.browserView~="Appearance" then prefs.browserView="Compact" end
+    if type(prefs.appearanceGear)~="boolean" then prefs.appearanceGear=true end
     if type(prefs.talentTab)~="number" or prefs.talentTab~=math.floor(prefs.talentTab) or prefs.talentTab<1 or prefs.talentTab>3 then prefs.talentTab=1 end
     if type(prefs.filters)~="table" then prefs.filters=P.DefaultFilters() end
     local filters=prefs.filters
@@ -65,12 +69,23 @@ function P.Load(db)
     end
     for key,state in pairs(filters.stats) do if type(key)~="string" or (state~=true and state~=-1) then filters.stats[key]=nil end end
     if type(filters.qualities)~="table" then filters.qualities={} end
-    for key,enabled in pairs(filters.qualities) do if (key~=2 and key~=3 and key~=4 and key~=5) or (enabled~=true and enabled~=-1) then filters.qualities[key]=nil end end
-    if filters.quality==2 or filters.quality==3 or filters.quality==4 or filters.quality==5 then filters.qualities[filters.quality]=true end
+    for key,enabled in pairs(filters.qualities) do if type(key)~="number" or key~=math.floor(key) or key<0 or key>6 or (enabled~=true and enabled~=-1) then filters.qualities[key]=nil end end
+    if type(filters.quality)=="number" and filters.quality==math.floor(filters.quality) and filters.quality>=0 and filters.quality<=6 then filters.qualities[filters.quality]=true end
     filters.quality=nil
+    if prefs.rarityDefaultsVersion~=2 then
+        local previousDefault={[2]=true,[3]=true,[4]=true,[5]=true,[6]=true}
+        if (prefs.rarityDefaultsVersion~=1 and not next(filters.qualities)) or U.equal(filters.qualities,previousDefault) then
+            filters.qualities=P.DefaultRarities()
+        end
+        prefs.rarityDefaultsVersion=2
+    end
     if type(filters.acquisition)~="table" then filters.acquisition={} end
     local acquisitionKeys={};for _,option in ipairs(OBP.Catalogue.AcquisitionOptions) do acquisitionKeys[option[2]]=true end
     for key,state in pairs(filters.acquisition) do if not acquisitionKeys[key] or (state~=true and state~=-1) then filters.acquisition[key]=nil end end
+    if prefs.acquisitionDefaultsVersion~=1 then
+        if not next(filters.acquisition) then filters.acquisition=P.DefaultAcquisition() end
+        prefs.acquisitionDefaultsVersion=1
+    end
     if type(filters.instance)~="number" then filters.instance=nil end
     if type(prefs.position)~="table" or type(prefs.position.x)~="number" or type(prefs.position.y)~="number" then prefs.position=nil end
     if prefs.position and (type(prefs.position.scale)~="number" or prefs.position.scale~=prefs.position.scale or prefs.position.scale<=0 or prefs.position.scale==math.huge) then prefs.position.scale=nil end

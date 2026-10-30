@@ -18,9 +18,14 @@ Made for the OctoWoW 1.18.1 client. **ClassicAPI.dll is required for complete st
 Type `/ogp` to open the planner.
 
 - **Gear:** Click a gear slot, then choose an item from the list. Right-click a slot to clear it. **Copy Current Gear** replaces the planned gear with all your equipped items, including items outside the catalogue and their random suffixes. Copies retain their exact item links and supported stats when saved. Hover over an item to see its stats and sources. Right-click a browser item for the full source list.
-- **Search and filters:** Search or sort the item list. Narrow it by instance, level, rarity, stats, or how items are obtained.
+- **Search and filters:** Browse equipment of every rarity, including poor, common, and all uncommon items. Search, sort, or filter by instance, level, rarity, stats, or how items are obtained. Crafted sources show the profession, such as **Tailoring**; broad bind-on-equip world loot is labeled **World Drop**. Random-suffix items appear as their base item without suffix bonuses; copied current gear keeps its actual suffix.
+- **Appearance View:** Click **Appearance** above Filters to browse six character previews at a time. Search, sorting and filters work as usual. Click a card to add its item to the build, or right-click for sources. **Show All Gear**, beside the view button, previews each item with your planned gear; uncheck it to show the item alone. Click **Compact** to return to the icon list.
 - **Enchants:** Click **Enchants** below the model to choose an enchantment for the selected item.
 - **Talents:** Switch to **Talents**, choose a level from 10–60, and spend the available points. **Copy Current Talents** copies your character's current build into the plan.
 - **Builds:** Use the Builds dropdown to create or switch builds, **Save** to keep changes, and **Import / Export** to share them.
+
+Poor and Common are excluded with an **X** by default; all other rarities are unchecked and included. Click an X to clear that exclusion. **Clear Filters** restores these defaults.
+
+**Unknown** means no acquisition category could be established. It is excluded with an **X** by default; the other acquisition categories are unchecked. Excluding it keeps items with a known source, even if some extra source records are incomplete. Click its X to include Unknown items. **Clear Filters** restores the exclusion.
 
 For troubleshooting, use `/ogp diagnostics`. When reporting a problem, include the addon version, any Lua error, and the steps that caused it.
